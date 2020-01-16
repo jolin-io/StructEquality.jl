@@ -1,8 +1,0 @@
-# This file is machine-generated - editing it directly is not advised
-
-[[SimpleMatch]]
-git-tree-sha1 = "eddb23a42872f9b9024bc3d6bb17bc727f39f851"
-repo-rev = "master"
-repo-url = "https://github.com/schlichtanders/SimpleMatch.jl"
-uuid = "a3ae8450-d22f-11e9-3fe0-77240e25996f"
-version = "0.1.0"
