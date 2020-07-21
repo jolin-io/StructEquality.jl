@@ -1,6 +1,7 @@
 module StructEquality
 export def_structequal, @def_structequal
 
+using Compat
 using SimpleMatch
 
 issomething = !isnothing

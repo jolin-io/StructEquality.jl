@@ -1,11 +1,26 @@
 StructEquality
 ==============
 
+[![Build Status](https://github.com/schlichtanders/StructEquality.jl/workflows/CI/badge.svg)](https://github.com/schlichtanders/StructEquality.jl/actions)
+[![Coverage](https://codecov.io/gh/schlichtanders/StructEquality.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/schlichtanders/StructEquality.jl)
+
+install like
+```julia
+using Pkg
+pkg"registry add https://github.com/JuliaRegistries/General"  # central julia registry
+pkg"registry add https://github.com/schlichtanders/SchlichtandersJuliaRegistry.jl"  # custom registry
+pkg"add StructEquality"
+```
+
 load like
 ```julia
 using StructEquality
 ```
 which gives you access to one macro `@def_structequal`.
+
+
+Motivation & Usage
+------------------
 
 Struct types have an `==` implementation by default which uses `===`, i.e. object identity, on the underlying
 components to compare structs.
@@ -57,5 +72,5 @@ of the fields.
 References
 ----------
 
-For more details to this topic, please see the discouse thread
+For more details to this topic, please see the discourse thread
 https://discourse.julialang.org/t/surprising-struct-equality-test/4890/9
