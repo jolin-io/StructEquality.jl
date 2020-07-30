@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2020-07-30
+### Added
+- added doc string to `@def_structequal`
+### Changed
+- dropped dependency on SimpleMatch
+
 ## [1.0.0] - 2020-07-21
 ### Added
 - GithubActions for CI, Codecov
