@@ -76,6 +76,7 @@ _extract_field_symbol(expr::Expr) = _extract_field_symbol(Val{expr.head}(), expr
 _extract_field_symbol(head::Val{:(=)}, args) = _extract_field_symbol(args[1])
 _extract_field_symbol(head::Val{:(::)}, args) = _extract_field_symbol(args[1])
 _extract_field_symbol(head::Val, args) = nothing
+_extract_field_symbol(docstring::String) = nothing
 # _extract_field_symbol(head::Val{:function}, args) = nothing
 # _extract_field_symbol(head::Val{:call}, args) = nothing
 # _extract_field_symbol(head::Val{:where}, args) = nothing
