@@ -1,7 +1,7 @@
 name = "StructEquality"
 uuid = "6ec83bb0-ed9f-11e9-3b4c-2b04cb4e219c"
 authors = ["Sahm Stephan <stephan.sahm@gmx.de>"]
-version = "1.0.0"
+version = "1.0.1"
 
 [deps]
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
