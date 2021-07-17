@@ -9,8 +9,8 @@ jobs:
     strategy:
       matrix:
         version:
-          - '1.1'  # we need support for custom registries
-          - '1.4'
+          - '1.0'
+          - '1.6'
           - 'nightly'
         os:
           - ubuntu-latest
@@ -34,13 +34,6 @@ jobs:
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
             ${{ runner.os }}-
-      - run: |
-          julia -e '
-            using Pkg
-            pkg"registry add https://github.com/JuliaRegistries/General"  # central julia registry
-            pkg"registry add https://github.com/schlichtanders/SchlichtandersJuliaRegistry.jl"  # custom registry
-            '
-        shell: bash
       - uses: julia-actions/julia-buildpkg@latest
       - uses: julia-actions/julia-runtest@latest
       - uses: julia-actions/julia-processcoverage@v1
