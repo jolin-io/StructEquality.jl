@@ -6,10 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.2] - 2021-07-17
+## [1.1.0] - 2021-07-17
 ### Changed
+- Julia 1.0 seems to be failing, Compat entry is now correctly set to julia 1.1. (The community guidelines says that Compat entry updates are breaking. As it hasn't worked before, this is not breaking, but for auto-merging we increase the version nevertheless.)
 - updated TagBot and CompatHelper
-- Julia 1.0 seems to be failing, Compat entry is now correctly set to julia 1.1
 
 ## [1.0.1] - 2021-07-16
 ### Fixed
