@@ -2,7 +2,7 @@ module StructEquality
 export struct_hash, struct_equal, struct_isequal, struct_isapprox
 export @struct_hash, @struct_equal, @struct_isequal, @struct_isapprox
 export @struct_hash_equal, @struct_hash_equal_isapprox
-export @struct_hash_isequal, @struct_hash_isequal_isapprox
+export @struct_hash_equal_isequal, @struct_hash_equal_isequal_isapprox
 export @def_structequal
 
 using Compat
@@ -94,11 +94,11 @@ macro struct_hash_equal_isapprox(expr)
   _struct____(expr, T -> Expr(:block, _expr_hash(T), _expr_equal(T), _expr_isapprox(T)))
 end
 
-macro struct_hash_isequal(expr)
+macro struct_hash_equal_isequal(expr)
   _struct____(expr, T -> Expr(:block, _expr_hash(T), _expr_equal(T), _expr_isequal(T)))
 end
 
-macro struct_hash_isequal_isapprox(expr)
+macro struct_hash_equal_isequal_isapprox(expr)
   _struct____(expr, T -> Expr(:block, _expr_hash(T), _expr_equal(T), _expr_isequal(T), _expr_isapprox(T)))
 end
 
