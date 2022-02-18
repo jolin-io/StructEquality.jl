@@ -1,96 +1,140 @@
 module StructEquality
-export def_structequal, @def_structequal
+export struct_hash, struct_equal, struct_isequal, struct_isapprox
+export @struct_hash, @struct_equal, @struct_isequal, @struct_isapprox
+export @struct_hash_equal, @struct_hash_equal_isapprox
+export @struct_hash_isequal, @struct_hash_isequal_isapprox
+export @def_structequal
 
 using Compat
+include("utils.jl")
 
-const issomething = !isnothing
-const nonempty = !isempty
+# Generator functions
+# ===================
 
-"""
-    @def_structequal YourStructTypeName
+@generated struct_equal(e1, e2) = false  # different types
+@generated struct_equal(e1::T, e2::T) where T = begin
+  # singleton structs just need to be of the same type
+  fieldcount(T) > 0 || return true
+  
+  # else compare field-wise
+  eqfields = (:(e1.$field == e2.$field) for field in fieldnames(T))
+  combine(expr, acc) = Expr(:&&, expr, acc)
+  return foldr(combine, eqfields)
+end
 
-Defines an equal `==` method for your struct which compares all fields.
+@generated struct_isequal(e1, e2) = false  # different types
+@generated struct_isequal(e1::T, e2::T) where T = begin
+  # singleton structs just need to be of the same type
+  fieldcount(T) > 0 || return true
+  
+  # else compare field-wise
+  eqfields = (:(isequal(e1.$field, e2.$field)) for field in fieldnames(T))
+  combine(expr, acc) = Expr(:&&, expr, acc)
+  return foldr(combine, eqfields)
+end
 
-Why this macro? On the opposite, Julia's default `==` compares custom structs by object reference.
-I.e. it would give `YourStructTypeName([]) != YourStructTypeName([])` despite `[] == []`.
-As this can be quite unintuitive, this macro provides a simple way to define the field-wise comparison.
-"""
-macro def_structequal(struct_expr)
-  nested_reference = _nested_reference(struct_expr)
-  if nonempty(nested_reference)
-    struct′ = _getnestedfield(__module__, nested_reference)
-    struct_attributes = fieldnames(struct′)
-    esc(def_structequal(struct_expr, struct_attributes))
+@generated struct_isapprox(e1, e2; kwargs...) = begin
+  # isapprox works accross different fieldtypes, but the struct wrapper type needs to be the same
+  e1.name.wrapper == e2.name.wrapper || return false
+  fieldnames(e1) == fieldnames(e2) || return false
+  # singleton structs just need to be of the same type
+  fieldcount(e1) > 0 || return e1 == e2
+  
+  # else compare field-wise
+  eqfields = Iterators.map(zip(fieldnames(e1), fieldtypes(e1), fieldtypes(e2))) do (field, type1, type2)
+    if hasmethod(Base.isapprox, Tuple{type1, type2})
+      :(isapprox(e1.$field, e2.$field; kwargs...))
+    else
+      :(isequal(e1.$field, e2.$field))
+    end
+  end
+  combine(expr, acc) = Expr(:&&, expr, acc)
+  return foldr(combine, eqfields)
+end
+
+struct_hash(x) = struct_hash(x, zero(UInt))
+@generated struct_hash(e::T, h::UInt) where T = begin
+  fields = (:(e.$field) for field in fieldnames(e))
+  init = Expr(:call, Base.hash, QuoteNode(T.name.name), :h)
+  combine(expr, acc) = Expr(:call, Base.hash, expr, acc)
+  foldr(combine, fields; init)
+end
+
+
+# Macros
+# ======
+
+_expr_equal(T) = :(Base.:(==)(a::$T, b::$T) = $struct_equal(a, b))
+_expr_isequal(T) = :(Base.isequal(a::$T, b::$T) = $struct_isequal(a, b))
+_expr_isapprox(T) = :(Base.isapprox(a::$T, b::$T; kwargs...) = $struct_isapprox(a, b; kwargs...))
+_expr_hash(T) = :(Base.hash(a::$T, h::UInt) = $struct_hash(a, h))
+
+macro struct_equal(expr)
+  _struct____(expr, _expr_equal)
+end
+macro struct_isequal(expr)
+  _struct____(expr, _expr_isequal)
+end
+macro struct_isapprox(expr)
+  _struct____(expr, _expr_isapprox)
+end
+macro struct_hash(expr)
+  _struct____(expr, _expr_hash)
+end
+
+
+# Macro Combinations 
+# ..................
+
+macro struct_hash_equal(expr)
+  _struct____(expr, T -> Expr(:block, _expr_hash(T), _expr_equal(T)))
+end
+
+macro struct_hash_equal_isapprox(expr)
+  _struct____(expr, T -> Expr(:block, _expr_hash(T), _expr_equal(T), _expr_isapprox(T)))
+end
+
+macro struct_hash_isequal(expr)
+  _struct____(expr, T -> Expr(:block, _expr_hash(T), _expr_equal(T), _expr_isequal(T)))
+end
+
+macro struct_hash_isequal_isapprox(expr)
+  _struct____(expr, T -> Expr(:block, _expr_hash(T), _expr_equal(T), _expr_isequal(T), _expr_isapprox(T)))
+end
+
+
+# Backwards compatibility
+# .......................
+
+macro def_structequal(expr)
+  Base.depwarn("`@def_structequal` is deprecated, use `@struct_equal` instead.", Symbol("@def_structequal"))
+  _struct____(expr, _expr_equal)
+end
+
+
+# Generic implementation
+# ======================
+
+function _struct____(expr, create_expr)
+  # check whether the given input expr is just referring to the name of a struct
+  if _isreference(expr)
+    esc(create_expr(expr))
+
+  elseif isa(expr, Type)
+    name = structtype_to_referenceexpr(expr)
+    esc(create_expr(name))
+
   else
-    definitions = def_structequal(struct_expr)
+    new_exprs = map(create_expr ∘ _extract_structname, _find_structs(expr))
+    @assert nonempty(new_exprs) "haven't found any struct"
+    new_exprs_merged = length(new_exprs) == 1 ? new_exprs[1] : Expr(:block, new_exprs...)
+    
     esc(quote
-      Core.@__doc__ $struct_expr
-      $definitions
+      Core.@__doc__ $expr
+      $new_exprs_merged
     end)
   end
 end
 
-_nested_reference(symbol::Symbol) = (symbol,)
-_nested_reference(quotenode::QuoteNode) = _nested_reference(quotenode.value)
-_nested_reference(expr::Expr) = _nested_reference(Val{expr.head}(), expr.args)
-_nested_reference(head::Val{:(.)}, args) = tuple(_nested_reference(args[1])..., _nested_reference(args[2])...)
-_nested_reference(_, _) = ()
-_getnestedfield(mod, nested_reference) = reduce(getfield, nested_reference; init=mod)
-
-
-function def_structequal(expr)
-  struct_exprs = _find_substructs(expr)
-  @assert !isempty(struct_exprs) "expecting structs somewhere, got $(expr.head)"
-  results = map(_def_structequal, struct_exprs)
-  length(results) == 1 ? results[1] : Expr(:block, results...)
-end
-
-_find_substructs(_) = []
-function _find_substructs(expr::Expr)
-  if expr.head == :struct
-    [expr]
-  else
-    _flatten(_find_substructs(a) for a in expr.args)
-  end
-end
-
-_flatten(a) = vcat(a...)
-
-
-function _def_structequal(struct_expr)
-  @assert struct_expr.head == :struct  "expecting struct, got $struct_expr"
-  struct_name = _extract_structname(struct_expr.args[2])
-  struct_body = struct_expr.args[3]
-  struct_attributes = filter(issomething, _extract_field_symbol.(struct_body.args))
-  def_structequal(struct_name, struct_attributes)
-end
-
-_extract_structname(symbol::Symbol) = symbol
-_extract_structname(expr::Expr) = _extract_structname(Val{expr.head}(), expr.args)
-_extract_structname(head::Val{:(<:)}, args) = _extract_structname(args[1])
-_extract_structname(head::Val{:(curly)}, args) = _extract_structname(args[1])
-
-_extract_field_symbol(symbol::Symbol) = symbol
-_extract_field_symbol(::LineNumberNode) = nothing
-_extract_field_symbol(expr::Expr) = _extract_field_symbol(Val{expr.head}(), expr.args)
-_extract_field_symbol(head::Val{:(=)}, args) = _extract_field_symbol(args[1])
-_extract_field_symbol(head::Val{:(::)}, args) = _extract_field_symbol(args[1])
-_extract_field_symbol(head::Val, args) = nothing
-_extract_field_symbol(docstring::String) = nothing
-# _extract_field_symbol(head::Val{:function}, args) = nothing
-# _extract_field_symbol(head::Val{:call}, args) = nothing
-# _extract_field_symbol(head::Val{:where}, args) = nothing
-
-
-function def_structequal(struct_name, struct_attributes)
-  @assert !isempty(struct_attributes) "struct $struct_name is singleton. structequal only makes sense for non-singleton structs"
-  comparisons = (:(s1.$attr == s2.$attr) for attr in struct_attributes)
-  comparison = Base.reduce(comparisons) do c1, c2
-    :($c1 && $c2)
-  end
-  :(function Base.:(==)(s1::$struct_name, s2::$struct_name)
-    $comparison
-  end)
-end
 
 end # module
