@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+##  [1.2.0] - 2022-04-08
+### Deprecated
+- `@def_structequal` is deprecated. You can use `@struct_equal` as a direct replacement.
+
+### Added
+
+- `@def_structequal` is now `@struct_equal`, but the old name is still supported
+- added `@struct_hash` for defining `Base.hash`
+- added `@struct_equal` for defining `Base.:(==)`
+- added `@struct_isequal` for defining `Base.isequal`
+- added `@struct_isapprox` for defining `Base.isapprox`
+- added combination macros `@struct_hash_equal`, `@struct_hash_equal_isapprox`, `@struct_hash_equal_isequal`, `@struct_hash_equal_isequal_isapprox`, which are straightforward combinations of the other 4 macros
+- added generated functions which are now the implementation detail of the respective macros `struct_hash`, `struct_equal`, `struct_isequal` & `struct_isapprox`
+
 ## [1.1.0] - 2021-07-17
 ### Changed
 - Julia 1.0 seems to be failing, Compat entry is now correctly set to julia 1.1. (The community guidelines says that Compat entry updates are breaking. As it hasn't worked before, this is not breaking, but for auto-merging we increase the version nevertheless.)
