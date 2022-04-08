@@ -57,7 +57,7 @@ struct_hash(x) = struct_hash(x, zero(UInt))
   fields = (:(e.$field) for field in fieldnames(e))
   init = Expr(:call, Base.hash, QuoteNode(T.name.name), :h)
   combine(expr, acc) = Expr(:call, Base.hash, expr, acc)
-  foldr(combine, fields; init)
+  foldr(combine, fields; init = init)
 end
 
 
