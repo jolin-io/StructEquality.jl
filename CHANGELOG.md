@@ -6,13 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-##  [1.2.0] - 2022-04-08
+##  [2.0.0] - 2022-04-08
+
+### Breaking
+- dropped support for Julia versions < 1.6
+- renamed `@def_structequal` to `@struct_equal`. The old name is still available for easy transitioning, but `@def_structequal` is going to be removed in an upcoming minor release.
 ### Deprecated
 - `@def_structequal` is deprecated. You can use `@struct_equal` as a direct replacement.
 
-### Added
+### Changed
+- renamed `@def_structequal` to `@struct_equal`
 
-- `@def_structequal` is now `@struct_equal`, but the old name is still supported
+### Added
 - added `@struct_hash` for defining `Base.hash`
 - added `@struct_equal` for defining `Base.:(==)`
 - added `@struct_isequal` for defining `Base.isequal`
