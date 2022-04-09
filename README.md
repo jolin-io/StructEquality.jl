@@ -1,8 +1,8 @@
 StructEquality
 ==============
 
-[![Build Status](https://github.com/schlichtanders/StructEquality.jl/workflows/CI/badge.svg)](https://github.com/schlichtanders/StructEquality.jl/actions)
-[![Coverage](https://codecov.io/gh/schlichtanders/StructEquality.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/schlichtanders/StructEquality.jl)
+[![Build Status](https://github.com/jolin-io/StructEquality.jl/workflows/CI/badge.svg)](https://github.com/jolin-io/StructEquality.jl/actions)
+[![Coverage](https://codecov.io/gh/jolin-io/StructEquality.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jolin-io/StructEquality.jl)
 
 install like
 ```julia
