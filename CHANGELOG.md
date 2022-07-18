@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2022-07-18
+
+### Changed
+- `struct_equal` and `struct_isequal` where always comparing false if the types differ.
+  This is changed now that only the typenames are compared for equality, i.e. ignoring
+  difference in typevariables. This was a bug in that julia typevariables are an 
+  instable characteristic of structs in that the uncontrollable and unpredictable
+  compiler type inference may decide to infer a more general type-variable.
+
+  The exception are singleton typevariables, where still fallback to the previous 
+  behaviour of comparing the full type, including typevariables. As there are no fields,
+  singleton types typevariables are like tags and hence different typevariables
+  are indeed intended to define different objects.
+
+- updated compat helper
+
 ##  [2.0.0] - 2022-04-08
 
 ### Breaking
