@@ -10,78 +10,108 @@ end
 # Structs
 # =======
 begin
-    function create_structs_1(name)
+    function create_structs_1(structname)
         quote
-            struct $name
+            struct $structname
                 a
                 b
             end
-            a = $name(1, [2,3])
-            b = $name(1, [2,3])
-            a, b
+            a = $structname(1, [2,3])
+            b = $structname(1, [2,3])
+            true, a, b
         end
     end
-    function create_structs_2(name)
+    function create_structs_2(structname)
         quote
-            struct $name
+            struct $structname
                 a
                 b::Vector
             end
-            a = $name(1, [2,3])
-            b = $name(1, [2,3])
-            a, b
+            a = $structname(1, [2,3])
+            b = $structname(1, [2,3])
+            true, a, b
         end
     end
 
-    function create_structs_3(name)
+    function create_structs_3(structname)
         quote
-            struct $name
+            struct $structname
                 a::Int
                 b
             end
-            a = $name(1, [2,3])
-            b = $name(1, [2,3])
-            a, b
+            a = $structname(1, [2,3])
+            b = $structname(1, [2,3])
+            true, a, b
         end
     end
 
-    function create_structs_4(name)
+    function create_structs_4(structname)
         quote
-            Base.@kwdef mutable struct $name{T} <: Number
+            Base.@kwdef mutable struct $structname{T} <: Number
                 a = 1
                 b::Vector = [2,3]
             end
-            a = $name{Int}(a = 1)
-            b = $name{Int}(a = 1)
-            a, b
+            a = $structname{Int}(a = 1)
+            b = $structname{Int}(a = 1)
+            true, a, b
         end
     end
 
-    function create_structs_5(name)
+    function create_structs_5(structname)
         quote
-            mutable struct $name
+            mutable struct $structname
                 a
                 b
             end
-            a = $name(1, [2,3])
-            b = $name(1, [2,3])
-            a, b
+            a = $structname(1, [2,3])
+            b = $structname(1, [2,3])
+            true, a, b
         end
     end
 
-    function create_structs_6(name)
+    function create_structs_6(structname)
         quote
-            struct $name
+            struct $structname
                 a
                 b
-                $name(a, b) = new(a, b)
-                function $name(a, b, c)
+                $structname(a, b) = new(a, b)
+                function $structname(a, b, c)
                     new(a, b)
                 end
             end
-            a = $name(1, [2,3])
-            b = $name(1, [2,3])
-            a, b
+            a = $structname(1, [2,3])
+            b = $structname(1, [2,3])
+            true, a, b
+        end
+    end
+
+    function create_structs_7(structname)
+        quote
+            struct $structname{Element}
+                a
+                b::Vector{Element}
+            end
+            a = $structname{Int}(1, [2,3])
+            b = $structname{Any}(1, [2,3])
+            true, a, b
+        end
+    end
+
+    function create_structs_8(structname)
+        structname2 = Symbol(structname, 2)
+        quote
+            struct $structname{Element}
+                a
+                b::Vector{Element}
+            end
+
+            struct $structname2{Element}
+                a
+                b::Vector{Element}
+            end
+            a = $structname{Int}(1, [2,3])
+            b = $structname2{Int}(1, [2,3])
+            false, a, b
         end
     end
 end
@@ -93,6 +123,8 @@ create_structs_funcs = [
     create_structs_4,
     create_structs_5,
     create_structs_6,
+    create_structs_7,
+    create_structs_8,
 ]
 
 
@@ -109,9 +141,9 @@ create_structs_funcs = [
     
     for (create_structs, (macroname, test_with)) in Iterators.product(create_structs_funcs, tests_with)
         @testset "$(repr(macroname))-$(repr(test_with))" begin
-            name = gensym(repr(create_structs))
-            a, b = eval(insert_macro_before_struct!(create_structs(name), macroname))
-            @test test_with(a, b)
+            structname = gensym(repr(create_structs))
+            should_be_same, a, b = eval(insert_macro_before_struct!(create_structs(structname), macroname))
+            @test test_with(a, b) == should_be_same
         end
     end
 
@@ -122,28 +154,28 @@ end
 # =======================
 
 begin
-    function test_equal(name, a, b)
+    function test_equal(structname, should_be_same, a, b)
         quote
             @test $a != $b
-            @struct_equal $name
-            @test $a == $b
+            @struct_equal $structname
+            @test ($a == $b) == $should_be_same
         end
     end
 
 
-    function test_isequal(name, a, b)
+    function test_isequal(structname, should_be_same, a, b)
         quote
             @test !isequal($a, $b)
-            @struct_isequal $name
-            @test isequal($a, $b)
+            @struct_isequal $structname
+            @test isequal($a, $b) == $should_be_same
         end
     end
 
-    function test_hash(name, a, b)
+    function test_hash(structname, should_be_same, a, b)
         quote
             @test hash($a) != hash($b)
-            @struct_hash $name
-            @test hash($a) == hash($b)
+            @struct_hash $structname
+            @test (hash($a) == hash($b)) == $should_be_same
         end
     end
 end
@@ -158,9 +190,9 @@ tests_without = [
 @testset "macro-after-struct" begin
     for (create_structs, test_without) in Iterators.product(create_structs_funcs, tests_without)
         @testset "$(repr(create_structs))-$(repr(test_without))" begin
-            name = gensym(repr(create_structs))
-            a, b = eval(create_structs(name))
-            eval(test_without(name, a, b))
+            structname = gensym(repr(create_structs))
+            should_be_same, a, b = eval(create_structs(structname))
+            eval(test_without(structname, should_be_same, a, b))
         end
     end
 end
@@ -171,27 +203,27 @@ end
 
 @testset "macro-after-struct-submodule" begin
 
-    function create_submodule_mystruct(name)
+    function create_submodule_mystruct(structname)
         quote
-            @eval module $name
+            @eval module $structname
                 struct MyStruct
                     a
                     b
                 end
             end
-            import .$name
-            a = $name.MyStruct(1, [2])
-            b = $name.MyStruct(1, [2])
-            a, b
+            import .$structname
+            a = $structname.MyStruct(1, [2])
+            b = $structname.MyStruct(1, [2])
+            true, a, b
         end
     end
 
     for test_without in tests_without
         @testset "submodule_struct-$(repr(test_without))" begin
             create_submodule_mystruct
-            name = gensym(repr(create_submodule_mystruct))
-            a, b = eval(create_submodule_mystruct(name))
-            eval(test_without(:($name.MyStruct), a, b))
+            structname = gensym(repr(create_submodule_mystruct))
+            should_be_same, a, b = eval(create_submodule_mystruct(structname))
+            eval(test_without(:($structname.MyStruct), should_be_same, a, b))
         end
     end
 

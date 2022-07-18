@@ -11,10 +11,12 @@ include("utils.jl")
 # Generator functions
 # ===================
 
-@generated struct_equal(e1, e2) = false  # different types
-@generated struct_equal(e1::T, e2::T) where T = begin
-  # singleton structs just need to be of the same type
-  fieldcount(T) > 0 || return true
+@generated struct_equal(e1::T1, e2::T2) where {T1, T2} = begin
+  # check that they are of the same type, ignoring typevariables
+  Base.typename(T1) === Base.typename(T2) || return false
+  T = Base.typename(T1).wrapper
+  # singleton structs need to be of the exact same type
+  fieldcount(T1) > 0 || return T1 == T2
   
   # else compare field-wise
   eqfields = (:(e1.$field == e2.$field) for field in fieldnames(T))
@@ -22,10 +24,13 @@ include("utils.jl")
   return foldr(combine, eqfields)
 end
 
-@generated struct_isequal(e1, e2) = false  # different types
-@generated struct_isequal(e1::T, e2::T) where T = begin
-  # singleton structs just need to be of the same type
-  fieldcount(T) > 0 || return true
+
+@generated struct_isequal(e1::T1, e2::T2) where {T1, T2} = begin
+  # check that they are of the same type, ignoring typevariables
+  Base.typename(T1) === Base.typename(T2) || return false
+  T = Base.typename(T1).wrapper
+  # singleton structs need to be of the exact same type
+  fieldcount(T) > 0 || return T1 == T2
   
   # else compare field-wise
   eqfields = (:(isequal(e1.$field, e2.$field)) for field in fieldnames(T))
@@ -33,15 +38,16 @@ end
   return foldr(combine, eqfields)
 end
 
-@generated struct_isapprox(e1, e2; kwargs...) = begin
+
+@generated struct_isapprox(e1::T1, e2::T2; kwargs...) where {T1, T2} = begin
   # isapprox works accross different fieldtypes, but the struct wrapper type needs to be the same
-  e1.name.wrapper == e2.name.wrapper || return false
-  fieldnames(e1) == fieldnames(e2) || return false
-  # singleton structs just need to be of the same type
-  fieldcount(e1) > 0 || return e1 == e2
+  Base.typename(T1).wrapper === Base.typename(T2).wrapper || return false
+  T = Base.typename(T1).wrapper
+  # singleton structs need to be of the exact same type
+  fieldcount(T1) > 0 || return T1 == T2
   
   # else compare field-wise
-  eqfields = Iterators.map(zip(fieldnames(e1), fieldtypes(e1), fieldtypes(e2))) do (field, type1, type2)
+  eqfields = Iterators.map(zip(fieldnames(T), fieldtypes(T1), fieldtypes(T2))) do (field, type1, type2)
     if hasmethod(Base.isapprox, Tuple{type1, type2})
       :(isapprox(e1.$field, e2.$field; kwargs...))
     else
@@ -54,8 +60,8 @@ end
 
 struct_hash(x) = struct_hash(x, zero(UInt))
 @generated struct_hash(e::T, h::UInt) where T = begin
-  fields = (:(e.$field) for field in fieldnames(e))
-  init = Expr(:call, Base.hash, QuoteNode(T.name.name), :h)
+  fields = (:(e.$field) for field in fieldnames(T))
+  init = Expr(:call, Base.hash, QuoteNode(Base.typename(T).name), :h)
   combine(expr, acc) = Expr(:call, Base.hash, expr, acc)
   foldr(combine, fields; init)
 end
